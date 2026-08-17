@@ -1,0 +1,40 @@
+# ---- Build output (CMake presets -> build/<preset>) ----
+/build/
+/Debug/
+/Release/
+
+# Generated object / binary / debug artifacts (in case of out-of-tree builds)
+*.o
+*.obj
+*.elf
+*.bin
+*.hex
+*.map
+*.lst
+*.su
+*.d
+*.a
+
+# ---- STM32CubeMX ----
+mx.scratch
+*.bak
+
+# ---- VS Code ----
+.vscode/*
+!.vscode/settings.json
+!.vscode/c_cpp_properties.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+.vscode/ipch/
+
+# ---- STM32Cube VS Code extension bundle metadata ----
+# (pinned toolchain versions, takim genelinde tutarlilik icin izlenir)
+!.settings
+
+# ---- OS / editor junk ----
+.DS_Store
+Thumbs.db
+desktop.ini
+*~
+*.swp
