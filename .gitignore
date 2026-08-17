@@ -2,6 +2,7 @@
 /build/
 /Debug/
 /Release/
+/Tests/Unit/build/
 
 # Generated object / binary / debug artifacts (in case of out-of-tree builds)
 *.o
