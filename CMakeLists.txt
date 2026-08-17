@@ -45,11 +45,18 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
+    Application/System/system.c
+    Application/Sensors/Light_Sensor/light_sensor.c
+    Platform/VEML6030/veml6030.c
+    Platform/VEML6030/veml6030_reg.c
 )
 
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
+    Application/System
+    Application/Sensors/Light_Sensor
+    Platform/VEML6030
 )
 
 # Add project symbols (macros)
