@@ -141,3 +141,8 @@ function(add_unity_test)
 endfunction()
 
 add_subdirectory(VEML6030)
+add_subdirectory(VEML3235)
+add_subdirectory(HTS221)
+add_subdirectory(LPS22HH)
+add_subdirectory(IIS2MDCTR)
+add_subdirectory(ISM330DHCX)

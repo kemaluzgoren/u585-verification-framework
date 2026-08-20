@@ -46,17 +46,44 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
     Application/System/system.c
+    Application/I2C_Bus/i2c_bus.c
     Application/Sensors/Light_Sensor/light_sensor.c
+    Application/Sensors/Humidity_Sensor/humidity_sensor.c
+    Application/Sensors/Pressure_Sensor/pressure_sensor.c
+    Application/Sensors/Magneto_Sensor/magneto_sensor.c
+    Application/Sensors/IMU_Sensor/imu_sensor.c
+    Application/Sensors/Sensor_Service/sensor_service.c
     Platform/VEML6030/veml6030.c
     Platform/VEML6030/veml6030_reg.c
+    Platform/VEML3235/veml3235.c
+    Platform/VEML3235/veml3235_reg.c
+    Platform/HTS221/hts221.c
+    Platform/HTS221/hts221_reg.c
+    Platform/LPS22HH/lps22hh.c
+    Platform/LPS22HH/lps22hh_reg.c
+    Platform/IIS2MDCTR/iis2mdc.c
+    Platform/IIS2MDCTR/iis2mdc_reg.c
+    Platform/ISM330DHCX/ism330dhcx.c
+    Platform/ISM330DHCX/ism330dhcx_reg.c
 )
 
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
     Application/System
+    Application/I2C_Bus
     Application/Sensors/Light_Sensor
+    Application/Sensors/Humidity_Sensor
+    Application/Sensors/Pressure_Sensor
+    Application/Sensors/Magneto_Sensor
+    Application/Sensors/IMU_Sensor
+    Application/Sensors/Sensor_Service
     Platform/VEML6030
+    Platform/VEML3235
+    Platform/HTS221
+    Platform/LPS22HH
+    Platform/IIS2MDCTR
+    Platform/ISM330DHCX
 )
 
 # Add project symbols (macros)
