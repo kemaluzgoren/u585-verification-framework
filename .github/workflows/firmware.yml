@@ -1,0 +1,94 @@
+name: Firmware CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: firmware-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+
+      - name: Configure
+        run: cmake -S Tests/Unit -B Tests/Unit/build -G Ninja
+
+      - name: Build
+        run: cmake --build Tests/Unit/build
+
+      - name: Run unit tests
+        run: ctest --test-dir Tests/Unit/build --output-on-failure
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for integration tests
+        id: check
+        run: |
+          if [ -f Tests/Integration/CMakeLists.txt ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: ruby/setup-ruby@v1
+        if: steps.check.outputs.present == 'true'
+        with:
+          ruby-version: '3.3'
+
+      - name: Install build tools
+        if: steps.check.outputs.present == 'true'
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+
+      - name: Configure
+        if: steps.check.outputs.present == 'true'
+        run: cmake -S Tests/Integration -B Tests/Integration/build -G Ninja
+
+      - name: Build
+        if: steps.check.outputs.present == 'true'
+        run: cmake --build Tests/Integration/build
+
+      - name: Run integration tests
+        if: steps.check.outputs.present == 'true'
+        run: ctest --test-dir Tests/Integration/build --output-on-failure
+
+      - name: No integration tests yet
+        if: steps.check.outputs.present == 'false'
+        run: echo "Tests/Integration/CMakeLists.txt not found yet, skipping this step."
+
+  build-firmware:
+    name: Build Firmware
+    needs: [unit-tests, integration-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Ninja
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+
+      - name: Install ARM GCC toolchain
+        uses: carlosperate/arm-none-eabi-gcc-action@v1
+        with:
+          release: '13.2.Rel1'
+
+      - name: Configure (Debug preset)
+        run: cmake --preset Debug
+
+      - name: Build (Debug preset)
+        run: cmake --build --preset Debug
