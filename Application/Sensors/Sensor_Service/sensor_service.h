@@ -12,9 +12,13 @@
 #define SENSOR_SERVICE_H_
 
 #include <stdint.h>
+#include "tx_api.h"
 
 void sensor_service_init(void);
 void sensor_service_run(void);
+
+/* ThreadX thread entry: periodically calls sensor_service_run(). */
+void sensor_service_task(ULONG thread_input);
 
 float sensor_service_get_ambient_light(void);
 float sensor_service_get_humidity(void);

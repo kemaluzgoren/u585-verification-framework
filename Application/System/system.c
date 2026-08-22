@@ -21,6 +21,11 @@
 
 extern I2C_HandleTypeDef hi2c2;
 
+#define SENSOR_SERVICE_THREAD_STACK_SIZE   (1024U)
+#define SENSOR_SERVICE_THREAD_PRIORITY     (16U)
+
+static TX_THREAD sensor_service_thread;
+
 /* All MEMS sensors on this board (light, humidity/temp, pressure/temp,
  * magneto, IMU) share this single physical I2C2 peripheral, so they are
  * handed the same I2C_Bus_t instance rather than each wrapping hi2c2
@@ -53,13 +58,25 @@ void System_Init(void) {
         Error_Handler();
     }
 
-    sensor_service_init();
-
 }
 
 
-void System_Run(void) {
+UINT System_Start(TX_BYTE_POOL *byte_pool) {
 
-    sensor_service_run();
+    VOID *sensor_service_thread_stack;
+    UINT ret;
 
+    sensor_service_init();
+
+    ret = tx_byte_allocate(byte_pool, &sensor_service_thread_stack, SENSOR_SERVICE_THREAD_STACK_SIZE, TX_NO_WAIT);
+    if (ret != TX_SUCCESS) {
+        return ret;
+    }
+
+    ret = tx_thread_create(&sensor_service_thread, "Sensor Service Thread", sensor_service_task, 0,
+                            sensor_service_thread_stack, SENSOR_SERVICE_THREAD_STACK_SIZE,
+                            SENSOR_SERVICE_THREAD_PRIORITY, SENSOR_SERVICE_THREAD_PRIORITY,
+                            TX_NO_TIME_SLICE, TX_AUTO_START);
+
+    return ret;
 }

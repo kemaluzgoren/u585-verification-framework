@@ -11,9 +11,11 @@
 #ifndef APPLICATION_SYSTEM_H_
 #define APPLICATION_SYSTEM_H_
 
-void System_Init(void); 
-void System_Run(void);
+#include "tx_api.h"
 
-// void System_Start(void);
+void System_Init(void);
+
+
+UINT System_Start(TX_BYTE_POOL *byte_pool);
 
 #endif  /* APPLICATION_SYSTEM_H_ */

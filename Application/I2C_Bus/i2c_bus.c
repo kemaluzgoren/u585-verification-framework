@@ -1,6 +1,8 @@
 /**
  * @file    i2c_bus.c
- * @brief   Shared-I2C-peripheral access, guarded for future multi-task use.
+ * @brief   Shared-I2C-peripheral access. Serialized across ThreadX threads
+ *          when built with USE_THREADX defined; a plain no-op lock (and so
+ *          safe to drop into a bare-metal/superloop build) otherwise.
  *
  * @author  Kemal UZGOREN
  * @date    2026-08-20
@@ -12,20 +14,28 @@
 
 static void I2C_Bus_Lock(I2C_Bus_t *bus) {
 
+#ifdef USE_THREADX
+    tx_mutex_get(&bus->lock, TX_WAIT_FOREVER);
+#else
     (void)bus;
-    /* TODO(ThreadX): tx_mutex_get(&bus->lock, TX_WAIT_FOREVER); */
+#endif
 }
 
 static void I2C_Bus_Unlock(I2C_Bus_t *bus) {
 
+#ifdef USE_THREADX
+    tx_mutex_put(&bus->lock);
+#else
     (void)bus;
-    /* TODO(ThreadX): tx_mutex_put(&bus->lock); */
+#endif
 }
 
 void I2C_Bus_Init(I2C_Bus_t *bus, I2C_HandleTypeDef *hi2c) {
 
     bus->hi2c = hi2c;
-    /* TODO(ThreadX): tx_mutex_create(&bus->lock, "i2c_bus", TX_NO_INHERIT); */
+#ifdef USE_THREADX
+    tx_mutex_create(&bus->lock, "i2c_bus", TX_NO_INHERIT);
+#endif
 }
 
 int32_t I2C_Bus_IsDeviceReady(I2C_Bus_t *bus, uint16_t DevAddress, uint32_t Trials, uint32_t Timeout) {

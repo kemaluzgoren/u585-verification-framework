@@ -1,6 +1,8 @@
 /**
  * @file    i2c_bus.h
- * @brief   Shared-I2C-peripheral access, guarded for future multi-task use.
+ * @brief   Shared-I2C-peripheral access. Serialized across ThreadX threads
+ *          when built with USE_THREADX defined; a plain no-op lock (and so
+ *          safe to drop into a bare-metal/superloop build) otherwise.
  *
  * @author  Kemal UZGOREN
  * @date    2026-08-20
@@ -15,14 +17,15 @@
 
 #include "stm32u5xx_hal.h"
 
+#ifdef USE_THREADX
+#include "tx_api.h"
+#endif
+
 typedef struct {
     I2C_HandleTypeDef *hi2c;
-    /* TODO(ThreadX): add a TX_MUTEX lock member here once ThreadX is
-     * integrated, create it in I2C_Bus_Init(), and acquire/release it in
-     * i2c_bus.c's I2C_Bus_Lock()/I2C_Bus_Unlock(). Those two are no-ops
-     * today because the app is still a single-threaded superloop; every
-     * sensor module already routes its transfers through this struct, so
-     * that change stays local to i2c_bus.c. */
+#ifdef USE_THREADX
+    TX_MUTEX lock;
+#endif
 } I2C_Bus_t;
 
 void I2C_Bus_Init(I2C_Bus_t *bus, I2C_HandleTypeDef *hi2c);
