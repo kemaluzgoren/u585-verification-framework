@@ -1,22 +1,27 @@
 cmake_minimum_required(VERSION 3.22)
-project(u585_verification_framework_unit_tests C)
+project(u585_verification_framework_integration_tests C)
 
 #
-# Host-native unit test project for the hardware-independent driver logic
-# under Platform/. This is a SEPARATE build from the root CMakeLists.txt:
-# the root project cross-compiles for the STM32 target (arm-none-eabi-gcc),
-# this one compiles with the host compiler and runs directly on the PC.
+# Host-native integration test project: unlike Tests/Unit (one driver's
+# logic vs. its own register header), these test the SEAM between two of
+# this project's own modules - e.g. Platform/MX_CHIP/mx_wifi_azure_rtos.c
+# against the ThreadX/NetXDuo APIs it calls. This is a SEPARATE build from
+# the root CMakeLists.txt: the root project cross-compiles for the STM32
+# target (arm-none-eabi-gcc), this one compiles with the host compiler and
+# runs directly on the PC - same as Tests/Unit.
 #
 # Usage:
-#   cmake -S Tests/Unit -B Tests/Unit/build -G "MinGW Makefiles"
-#   cmake --build Tests/Unit/build
-#   ctest --test-dir Tests/Unit/build --output-on-failure
+#   cmake -S Tests/Integration -B Tests/Integration/build -G "MinGW Makefiles"
+#   cmake --build Tests/Integration/build
+#   ctest --test-dir Tests/Integration/build --output-on-failure
 #
-# Each driver module under test gets its own subfolder here (mirroring
+# Each seam under test gets its own subfolder here (mirroring
 # Platform/<Module>/), with its own small CMakeLists.txt that calls the
-# add_cmock_mock()/add_unity_test() helpers defined below. Add a new
-# module by creating the subfolder and appending an add_subdirectory()
-# call at the bottom of this file.
+# add_cmock_mock()/add_unity_test() helpers defined below - identical
+# helpers to Tests/Unit/CMakeLists.txt, duplicated rather than shared so
+# the two test projects stay independently configurable. Add a new module
+# by creating the subfolder and appending an add_subdirectory() call at
+# the bottom of this file.
 #
 
 set(CMAKE_C_STANDARD 11)
@@ -58,6 +63,20 @@ set(PLATFORM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../Platform)
 set(CMOCK_MOCK_DIR ${CMAKE_CURRENT_BINARY_DIR}/mocks)
 file(MAKE_DIRECTORY ${CMOCK_MOCK_DIR})
 
+# The vendored ThreadX tree (Middlewares/ST/threadx) this project builds
+# firmware from: common/src is portable C, safe to compile straight into
+# a host test binary (see Tests/Integration/MX_WIFI_ThreadX/threadx_host_glue.c
+# for exactly what that does and does not cover); common/inc and the
+# cortex_m33/gnu port's inc are its two required include directories.
+# Shared here so more than one test subdirectory can link real ThreadX
+# source without duplicating these paths.
+set(THREADX_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../Middlewares/ST/threadx)
+set(THREADX_COMMON_SRC_DIR ${THREADX_DIR}/common/src)
+set(THREADX_REAL_INC_DIRS
+  ${THREADX_DIR}/common/inc
+  ${THREADX_DIR}/ports/cortex_m33/gnu/inc
+)
+
 # ---- Unity test runner ----
 add_library(unity STATIC ${unity_SOURCE_DIR}/src/unity.c)
 target_include_directories(unity PUBLIC ${unity_SOURCE_DIR}/src)
@@ -73,7 +92,7 @@ enable_testing()
 # the caller's scope to the generated Mock<name>.c/.h paths.
 #
 #   add_cmock_mock(
-#     HEADER    ${PLATFORM_DIR}/VEML6030/veml6030_reg.h
+#     HEADER    ${CMAKE_CURRENT_SOURCE_DIR}/tx_api.h
 #     PLUGINS   ignore_arg return_thru_ptr   # optional, plain CMake list
 #     OUT_C     mock_c
 #     OUT_H     mock_h
@@ -118,11 +137,11 @@ endfunction()
 # Defines a Unity-based test executable and registers it with ctest.
 #
 #   add_unity_test(
-#     NAME          test_veml6030
-#     SOURCES       test_veml6030.c ${mock_c} ${PLATFORM_DIR}/VEML6030/veml6030.c
-#     INCLUDE_DIRS  ${PLATFORM_DIR}/VEML6030 ${CMOCK_MOCK_DIR}
-#     MOCK_TARGETS  generate_veml6030_reg_mock  # optional
-#     LIBS          cmock_runtime               # optional, in addition to unity
+#     NAME          test_mx_wifi_azure_rtos
+#     SOURCES       test_mx_wifi_azure_rtos.c ${mock_c} ${MX_CHIP_DIR}/mx_wifi_azure_rtos.c
+#     INCLUDE_DIRS  ${MX_CHIP_DIR} ${CMOCK_MOCK_DIR}
+#     MOCK_TARGETS  generate_tx_api_mock generate_nx_api_mock  # optional
+#     LIBS          cmock_runtime                              # optional, in addition to unity
 #   )
 function(add_unity_test)
   set(oneValueArgs NAME)
@@ -140,15 +159,5 @@ function(add_unity_test)
   add_test(NAME ${ARG_NAME} COMMAND ${ARG_NAME})
 endfunction()
 
-add_subdirectory(VEML6030)
-add_subdirectory(VEML3235)
-add_subdirectory(HTS221)
-add_subdirectory(LPS22HH)
-add_subdirectory(IIS2MDCTR)
-add_subdirectory(ISM330DHCX)
-add_subdirectory(OV5640)
-add_subdirectory(VL53L5CX)
-add_subdirectory(MX_WIFI_ChecksumUtils)
-add_subdirectory(MX_WIFI_Address)
-add_subdirectory(MX_WIFI_Slip)
-add_subdirectory(MX_WIFI_Hci)
+add_subdirectory(MX_WIFI_AzureRtos)
+add_subdirectory(MX_WIFI_ThreadX)
