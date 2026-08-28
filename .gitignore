@@ -3,6 +3,7 @@
 /Debug/
 /Release/
 /Tests/Unit/build/
+/Tests/Integration/build/
 
 # Generated object / binary / debug artifacts (in case of out-of-tree builds)
 *.o
@@ -32,6 +33,11 @@ mx.scratch
 # ---- STM32Cube VS Code extension bundle metadata ----
 # (pinned toolchain versions, takim genelinde tutarlilik icin izlenir)
 !.settings
+
+# ---- Secrets: never commit real Wi-Fi credentials ----
+# Application/WiFi_Bus/wifi_credentials.h.example is the committed template;
+# copy it to wifi_credentials.h and fill in real values locally.
+/Application/WiFi_Bus/wifi_credentials.h
 
 # ---- OS / editor junk ----
 .DS_Store
