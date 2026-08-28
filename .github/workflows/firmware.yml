@@ -87,6 +87,9 @@ jobs:
         with:
           release: '13.2.Rel1'
 
+      - name: Provide placeholder Wi-Fi credentials
+        run: cp Application/WiFi_Bus/wifi_credentials.h.example Application/WiFi_Bus/wifi_credentials.h
+
       - name: Configure (Debug preset)
         run: cmake --preset Debug
 
