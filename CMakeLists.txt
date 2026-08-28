@@ -53,6 +53,17 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Application/Sensors/Magneto_Sensor/magneto_sensor.c
     Application/Sensors/IMU_Sensor/imu_sensor.c
     Application/Sensors/Sensor_Service/sensor_service.c
+    Application/Network/network_service.c
+    Application/Network/http_responses.c
+    Application/Camera/camera_service.c
+    Platform/OV5640/ov5640.c
+    Platform/OV5640/ov5640_reg.c
+    Platform/VL53L5CX/vl53l5cx.c
+    Platform/VL53L5CX/porting/platform.c
+    Platform/VL53L5CX/modules/src/vl53l5cx_api.c
+    Platform/VL53L5CX/modules/src/vl53l5cx_plugin_detection_thresholds.c
+    Platform/VL53L5CX/modules/src/vl53l5cx_plugin_motion_indicator.c
+    Platform/VL53L5CX/modules/src/vl53l5cx_plugin_xtalk.c
     Platform/VEML6030/veml6030.c
     Platform/VEML6030/veml6030_reg.c
     Platform/VEML3235/veml3235.c
@@ -65,6 +76,16 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Platform/IIS2MDCTR/iis2mdc_reg.c
     Platform/ISM330DHCX/ism330dhcx.c
     Platform/ISM330DHCX/ism330dhcx_reg.c
+    Application/WiFi_Bus/wifi_bus.c
+    Platform/MX_WIFI/mx_wifi.c
+    Platform/MX_WIFI/core/checksumutils.c
+    Platform/MX_WIFI/core/mx_address.c
+    Platform/MX_WIFI/core/mx_wifi_hci.c
+    Platform/MX_WIFI/core/mx_wifi_ipc.c
+    Platform/MX_WIFI/core/mx_wifi_slip.c
+    Platform/MX_CHIP/mx_wifi_azure_rtos.c
+    Platform/MX_CHIP/nx_driver_emw3080.c
+    NetXDuo/App/filex_stub.c
 )
 
 # Add include paths
@@ -78,12 +99,23 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     Application/Sensors/Magneto_Sensor
     Application/Sensors/IMU_Sensor
     Application/Sensors/Sensor_Service
+    Application/Network
+    Application/Camera
+    Platform/OV5640
+    Platform/VL53L5CX
+    Platform/VL53L5CX/modules/inc
+    Platform/VL53L5CX/porting
     Platform/VEML6030
     Platform/VEML3235
     Platform/HTS221
     Platform/LPS22HH
     Platform/IIS2MDCTR
     Platform/ISM330DHCX
+    Application/WiFi_Bus
+    Platform/MX_WIFI
+    Platform/MX_WIFI/core
+    Platform/MX_WIFI/io_pattern
+    Platform/MX_CHIP
 )
 
 # Add project symbols (macros)

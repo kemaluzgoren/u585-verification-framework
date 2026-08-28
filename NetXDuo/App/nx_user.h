@@ -92,9 +92,7 @@
 
 /* NX_PHYSICAL_HEADER Specifies the size in bytes of the physical header of
    the frame. */
-/*
-#define NX_PHYSICAL_HEADER						16
-*/
+#define NX_PHYSICAL_HEADER                      44
 
 /* NX_PHYSICAL_TRAILER specifies the size in bytes of the physical packet
    trailer and is typically used to reserve storage for things like Ethernet
@@ -114,9 +112,7 @@
 /* Defined, this option enables deferred driver packet handling. This allows
    the driver to place a raw packet on the IP instance and have the driver's
    real processing routine called from the NetX internal IP helper thread. */
-/*
 #define NX_DRIVER_DEFERRED_PROCESSING
-*/
 
 /* Defined, the source address of incoming packet is checked. The default is
    disabled. */
@@ -156,9 +152,7 @@
    socket events, such as TCP connection and disconnect completion.
    These extended notify functions are mainly used by the BSD wrapper.
    The default is this feature is disabled.  */
-/*
 #define NX_ENABLE_EXTENDED_NOTIFY_SUPPORT
-*/
 
 /* Defined, NetX Duo is built with NAT process. By default this option is not
    defined. This option can be defined only when NX_DISABLE_IPV4 is not selected. */
@@ -376,9 +370,7 @@
 */
 
 /* Defined, IP packet filter is enabled.  */
-/*
 #define NX_ENABLE_IP_PACKET_FILTER
-*/
 
 /* Defined, disables both IPv4 and IPv6 fragmentation and reassembly logic. */
 /*
