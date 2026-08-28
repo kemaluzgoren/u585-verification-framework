@@ -58,12 +58,6 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Application/Camera/camera_service.c
     Platform/OV5640/ov5640.c
     Platform/OV5640/ov5640_reg.c
-    Platform/VL53L5CX/vl53l5cx.c
-    Platform/VL53L5CX/porting/platform.c
-    Platform/VL53L5CX/modules/src/vl53l5cx_api.c
-    Platform/VL53L5CX/modules/src/vl53l5cx_plugin_detection_thresholds.c
-    Platform/VL53L5CX/modules/src/vl53l5cx_plugin_motion_indicator.c
-    Platform/VL53L5CX/modules/src/vl53l5cx_plugin_xtalk.c
     Platform/VEML6030/veml6030.c
     Platform/VEML6030/veml6030_reg.c
     Platform/VEML3235/veml3235.c
@@ -102,9 +96,6 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     Application/Network
     Application/Camera
     Platform/OV5640
-    Platform/VL53L5CX
-    Platform/VL53L5CX/modules/inc
-    Platform/VL53L5CX/porting
     Platform/VEML6030
     Platform/VEML3235
     Platform/HTS221
