@@ -55,6 +55,7 @@ if(NOT RUBY_EXECUTABLE)
 endif()
 
 set(PLATFORM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../Platform)
+set(APPLICATION_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../Application)
 set(CMOCK_MOCK_DIR ${CMAKE_CURRENT_BINARY_DIR}/mocks)
 file(MAKE_DIRECTORY ${CMOCK_MOCK_DIR})
 
@@ -151,3 +152,4 @@ add_subdirectory(MX_WIFI_ChecksumUtils)
 add_subdirectory(MX_WIFI_Address)
 add_subdirectory(MX_WIFI_Slip)
 add_subdirectory(MX_WIFI_Hci)
+add_subdirectory(HttpPages)
