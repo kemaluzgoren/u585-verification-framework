@@ -161,3 +161,4 @@ endfunction()
 
 add_subdirectory(MX_WIFI_AzureRtos)
 add_subdirectory(MX_WIFI_ThreadX)
+add_subdirectory(SensorService)
