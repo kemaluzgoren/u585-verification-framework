@@ -14,14 +14,87 @@ an OV5640 camera, and serves both over Wi-Fi via HTTP.
   new frame can be captured while the previous one is served.
 - **Wi-Fi**: EMW3080 module (`MX_WIFI` driver stack) over NetXDuo's TCP/IP
   stack, with DHCP.
-- **HTTP server** (NetXDuo Web HTTP addon):
-  - `/hello` - liveness check
+- **HTTP server** (NetXDuo Web HTTP addon), served as a small dashboard:
+  - `/` - home page, links to the camera and sensor pages
+  - `/camera.html` - live camera view (embeds `/stream.jpg`)
+  - `/sensors.html` - live sensor readings (polls `/sensors.json` once a second)
   - `/image.jpg` - the most recently captured frame
   - `/stream.jpg` - MJPEG (`multipart/x-mixed-replace`) live stream, served
     on its own port so a long-lived stream connection never blocks the
-    other two routes
+    other routes
+  - `/sensors.json` - a snapshot of the current sensor readings
+  - `/hello` - liveness check
+
+## Screenshots
+
+The dashboard running live on a B-U585I-IOT02A, served entirely from the
+board itself over Wi-Fi:
+
+| `/camera.html` | `/sensors.html` |
+| --- | --- |
+| ![Live camera view](docs/images/camera-page.png) | ![Live sensor readings](docs/images/sensors-page.png) |
 
 ## Architecture
+
+```mermaid
+flowchart TB
+    subgraph HW["On-board hardware"]
+        I2C2[I2C2 bus]
+        I2C1[I2C1 bus]
+        WIFIHW[EMW3080 Wi-Fi module]
+    end
+
+    subgraph PLATFORM["Platform/ - hardware-agnostic drivers"]
+        MEMS["VEML6030 / HTS221 / LPS22HH /\nIIS2MDC / ISM330DHCX"]
+        OV5640[OV5640 camera]
+        MXWIFI[MX_WIFI driver stack]
+    end
+
+    subgraph APP["Application/ - services"]
+        I2CBUS["I2C_Bus (mutex-serialized)"]
+        SENSORSVC[Sensor_Service]
+        CAMSVC[Camera_Service]
+        WIFIBUS[WiFi_Bus]
+        NETSVC["Network_Service + http_responses"]
+    end
+
+    SYS[["System.c - composition root"]]
+
+    subgraph RTOS["ThreadX / NetXDuo"]
+        TX[ThreadX threads and mutexes]
+        NX["NetXDuo TCP/IP + Web HTTP server"]
+    end
+
+    CLIENT([Browser])
+
+    I2C2 --> MEMS
+    I2C1 --> OV5640
+    WIFIHW --> MXWIFI
+
+    MEMS --> I2CBUS
+    I2CBUS --> SENSORSVC
+    OV5640 --> CAMSVC
+    MXWIFI --> WIFIBUS
+    WIFIBUS --> NETSVC
+
+    SYS --> SENSORSVC
+    SYS --> CAMSVC
+    SYS -.->|registers providers| NETSVC
+    SENSORSVC -.->|"sensors.json provider"| NETSVC
+    CAMSVC -.->|"image.jpg / stream.jpg provider"| NETSVC
+
+    SENSORSVC --> TX
+    CAMSVC --> TX
+    NETSVC --> NX
+    NX --> TX
+
+    NETSVC -->|"/, /camera.html, /sensors.html,\n/image.jpg, /stream.jpg, /sensors.json"| CLIENT
+```
+
+`Network_Service` never includes `camera_service.h`/`sensor_service.h` directly - `System.c`
+registers a plain function pointer for each (`Http_Image_Provider_t` /
+`Http_Text_Provider_t`, `Application/Network/http_responses.h`), so the
+dotted arrows above are the only coupling between them.
 
 - **`Platform/`** - hardware-agnostic component drivers (mostly vendor
   sources), each taking its I/O (register read/write, delay, tick) as
