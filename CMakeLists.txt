@@ -55,6 +55,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Application/Sensors/Sensor_Service/sensor_service.c
     Application/Network/network_service.c
     Application/Network/http_responses.c
+    Application/Network/http_pages.c
     Application/Camera/camera_service.c
     Platform/OV5640/ov5640.c
     Platform/OV5640/ov5640_reg.c

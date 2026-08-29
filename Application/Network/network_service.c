@@ -48,7 +48,8 @@
  * b-u585i_iot02a_camera_demo reference used two servers. Shares
  * HttpServerPool (also the reference's choice) rather than allocating a
  * second multi-ten-KB packet pool. */
-#define STREAM_SERVER_PORT               (81)
+/* STREAM_SERVER_PORT itself now lives in network_service.h - see its
+ * comment there for why. */
 #define STREAM_SERVER_THREAD_STACK_SIZE  (4 * 1024)
 
 #define IP_THREAD_STACK_SIZE             (2 * 1024)
@@ -242,7 +243,7 @@ static VOID netx_main_thread_entry(ULONG thread_input) {
     if (status != NX_SUCCESS) {
         printf("nx_web_http_server_start failed: 0x%02x\r\n", status);
     } else {
-        printf("HTTP server listening on port %d (try http://<ip address>/hello or /image.jpg)\r\n", HTTP_SERVER_PORT);
+        printf("HTTP server listening on port %d (try http://<ip address>/ or /hello)\r\n", HTTP_SERVER_PORT);
     }
 
     status = nx_web_http_server_start(&StreamServer);

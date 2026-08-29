@@ -1,7 +1,7 @@
 /**
  * @file    http_responses.h
- * @brief   NX Web HTTP server request callbacks ("/hello", "/image.jpg",
- *          "/stream.jpg").
+ * @brief   NX Web HTTP server request callbacks ("/", "/camera.html",
+ *          "/sensors.html", "/sensors.json", "/image.jpg", "/stream.jpg").
  *
  * @author  Kemal UZGOREN
  * @date    2026-08-24
@@ -39,9 +39,23 @@ typedef int32_t (*Http_Image_Provider_t)(uint8_t *dest, uint32_t dest_capacity, 
  * succeeds. */
 void Http_Responses_RegisterImageProvider(Http_Image_Provider_t provider);
 
+/* Same shape as Http_Image_Provider_t, for text rather than binary
+ * payloads - dest is a plain byte buffer either way, but this second
+ * typedef keeps a text (JSON) source and a binary (JPEG) source from
+ * being registered in each other's slot by a type-checked accident.
+ * Returns 0 (nothing written) or 1 (dest[0..*len) now holds text),
+ * matching Http_Image_Provider_t's return convention. */
+typedef int32_t (*Http_Text_Provider_t)(char *dest, uint32_t dest_capacity, uint32_t *len, ULONG timeout);
+
+/* Wires a sensor-data provider in for "/sensors.json" to call. Until this
+ * is called (or if called with NULL), it answers 404. Called once from
+ * Application/System/system.c after Sensor_Service bring-up succeeds. */
+void Http_Responses_RegisterSensorProvider(Http_Text_Provider_t provider);
+
 /* Request callback for the main HTTP server (Application/Network/network_service.c's
- * HttpServer, port 80): answers "/hello" and "/image.jpg", 404s anything
- * else. Passed straight to nx_web_http_server_create(). */
+ * HttpServer, port 80): answers "/", "/camera.html", "/sensors.html",
+ * "/sensors.json", "/hello" and "/image.jpg", 404s anything else. Passed
+ * straight to nx_web_http_server_create(). */
 UINT Http_Server_Request_Notify(NX_WEB_HTTP_SERVER *server_ptr, UINT request_type, CHAR *resource,
                                  NX_PACKET *packet_ptr);
 

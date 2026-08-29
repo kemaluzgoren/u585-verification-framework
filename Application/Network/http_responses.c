@@ -1,7 +1,7 @@
 /**
  * @file    http_responses.c
- * @brief   NX Web HTTP server request callbacks ("/hello", "/image.jpg",
- *          "/stream.jpg").
+ * @brief   NX Web HTTP server request callbacks ("/", "/camera.html",
+ *          "/sensors.html", "/sensors.json", "/image.jpg", "/stream.jpg").
  *
  * @author  Kemal UZGOREN
  * @date    2026-08-24
@@ -14,6 +14,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "http_pages.h"
+
 /* Own policy constant, not Camera_Service's CAMERA_MAX_FRAME_SIZE - this
  * file has no dependency on camera_service.h at all, so it decides for
  * itself the largest image it is willing to buffer/serve. Sized the same
@@ -24,6 +26,11 @@
 #define STREAM_BOUNDARY       "u585verificationframeworkboundary"
 #define STREAM_CONTENT_TYPE   "multipart/x-mixed-replace;boundary=" STREAM_BOUNDARY
 
+/* Own policy constant - a sensor snapshot is at most a few hundred bytes
+ * (see Sensor_Service_ProvideJSON()'s doc comment), this is a generous
+ * ceiling above that. */
+#define HTTP_MAX_SENSOR_JSON_SIZE  (512UL)
+
 /* One scratch buffer per server thread (HttpServer's vs. StreamServer's
  * own internal thread, both nx_web_http_server_create() spawns in
  * network_service.c) - sharing a single buffer between them would race if
@@ -31,68 +38,107 @@
  * "/stream.jpg". */
 static uint8_t ImageFrameBuf[HTTP_MAX_IMAGE_SIZE];
 static uint8_t StreamFrameBuf[HTTP_MAX_IMAGE_SIZE];
+static char SensorJsonBuf[HTTP_MAX_SENSOR_JSON_SIZE];
 
 static Http_Image_Provider_t image_provider = NULL;
+static Http_Text_Provider_t sensor_provider = NULL;
 
 void Http_Responses_RegisterImageProvider(Http_Image_Provider_t provider) {
     image_provider = provider;
 }
 
+void Http_Responses_RegisterSensorProvider(Http_Text_Provider_t provider) {
+    sensor_provider = provider;
+}
+
 /**
   * HTTP server request callback. There is no FileX/media behind this
   * server, so every request must be answered here - matched resources
-  * get a real response, anything else gets a 404.
+  * get a real response, anything else gets a 404. Resolves resource to a
+  * body/content-type pair first, then does the (identical either way)
+  * header-generate/append/send dance once - the static pages, the JSON
+  * snapshot and the JPEG snapshot all end up going through the same tail.
   */
 UINT Http_Server_Request_Notify(NX_WEB_HTTP_SERVER *server_ptr, UINT request_type, CHAR *resource,
                                  NX_PACKET *packet_ptr) {
 
-    static const CHAR body[] = "u585-verification-framework is alive\r\n";
     NX_PACKET *response;
     UINT status;
-    uint32_t frame_len = 0;
-    int serving_hello = strcmp(resource, "/hello") == 0;
-    int serving_image = 0;
+    /* NX_WEB_HTTP_STATUS_OK/NOT_FOUND (nx_web_http_common.h) are the
+       literal status-line strings ("200 OK", "404 Not Found"), not an
+       integer code - nx_web_http_server_callback_generate_response_header()
+       takes that string directly. */
+    CHAR *status_code = NX_WEB_HTTP_STATUS_OK;
+    CHAR *content_type = NX_NULL;
+    const VOID *body_ptr = NX_NULL;
+    uint32_t body_len = 0;
 
     NX_PARAMETER_NOT_USED(request_type);
     NX_PARAMETER_NOT_USED(packet_ptr);
 
-    if (serving_hello) {
-        status = nx_web_http_server_callback_generate_response_header(server_ptr, &response, NX_WEB_HTTP_STATUS_OK,
-                                                                        sizeof(body) - 1, "text/plain", NX_NULL);
+    if (strcmp(resource, "/") == 0) {
+        content_type = "text/html";
+        body_ptr = IndexPage;
+        /* Application/Network/http_pages.h declares these as incomplete
+           array types ("extern const char X[];", no length), so sizeof()
+           isn't available here - only http_pages.c, where they are
+           actually defined, knows their size. strlen() works fine on any
+           of these NUL-terminated strings regardless. */
+        body_len = strlen(IndexPage);
+    } else if (strcmp(resource, "/camera.html") == 0) {
+        content_type = "text/html";
+        body_ptr = CameraPage;
+        body_len = strlen(CameraPage);
+    } else if (strcmp(resource, "/sensors.html") == 0) {
+        content_type = "text/html";
+        body_ptr = SensorsPage;
+        body_len = strlen(SensorsPage);
+    } else if (strcmp(resource, "/hello") == 0) {
+        content_type = "text/plain";
+        body_ptr = HelloBody;
+        body_len = strlen(HelloBody);
+    } else if (strcmp(resource, "/sensors.json") == 0) {
+        /* TX_NO_WAIT: give us whatever's current, don't wait for a new
+           reading - Sensor_Service_ProvideJSON()'s doc comment. */
+        if (sensor_provider != NULL &&
+            sensor_provider(SensorJsonBuf, sizeof(SensorJsonBuf), &body_len, TX_NO_WAIT) != 0) {
+            content_type = "application/json";
+            body_ptr = SensorJsonBuf;
+        } else {
+            status_code = NX_WEB_HTTP_STATUS_NOT_FOUND;
+        }
     } else if (strcmp(resource, "/image.jpg") == 0) {
         /* Copies out of the live capture buffer rather than borrowing a
            pointer into it, so the (possibly slow, over WiFi) send below
            never blocks the image provider's own capture thread - see
            Http_Image_Provider_t's doc comment. TX_NO_WAIT: give us
            whatever's current, don't wait for a new one. */
-        serving_image = (image_provider != NULL) &&
-                         (image_provider(ImageFrameBuf, sizeof(ImageFrameBuf), &frame_len, TX_NO_WAIT) != 0);
-        if (serving_image) {
-            status = nx_web_http_server_callback_generate_response_header(server_ptr, &response, NX_WEB_HTTP_STATUS_OK,
-                                                                            frame_len, "image/jpeg", NX_NULL);
+        if (image_provider != NULL &&
+            image_provider(ImageFrameBuf, sizeof(ImageFrameBuf), &body_len, TX_NO_WAIT) != 0) {
+            content_type = "image/jpeg";
+            body_ptr = ImageFrameBuf;
         } else {
             /* No provider registered, or no frame captured yet (e.g. a
                request arrived before the first VSYNC) - fall through to
                404. */
-            status = nx_web_http_server_callback_generate_response_header(server_ptr, &response,
-                                                                            NX_WEB_HTTP_STATUS_NOT_FOUND, 0, NX_NULL,
-                                                                            NX_NULL);
+            status_code = NX_WEB_HTTP_STATUS_NOT_FOUND;
         }
     } else {
-        status = nx_web_http_server_callback_generate_response_header(server_ptr, &response,
-                                                                        NX_WEB_HTTP_STATUS_NOT_FOUND, 0, NX_NULL,
-                                                                        NX_NULL);
+        status_code = NX_WEB_HTTP_STATUS_NOT_FOUND;
     }
+
+    /* body_ptr/body_len/content_type are only ever set together, in the
+       success branches above - still NX_NULL/0/NX_NULL here for every
+       404 case, exactly what a 404 response needs. */
+    status = nx_web_http_server_callback_generate_response_header(server_ptr, &response, status_code, body_len,
+                                                                    content_type, NX_NULL);
 
     if (status != NX_SUCCESS) {
         return NX_WEB_HTTP_CALLBACK_COMPLETED;
     }
 
-    if (serving_hello) {
-        nx_packet_data_append(response, (VOID *)body, sizeof(body) - 1,
-                               server_ptr->nx_web_http_server_packet_pool_ptr, NX_WAIT_FOREVER);
-    } else if (serving_image) {
-        nx_packet_data_append(response, ImageFrameBuf, frame_len,
+    if (body_ptr != NX_NULL) {
+        nx_packet_data_append(response, (VOID *)body_ptr, body_len,
                                server_ptr->nx_web_http_server_packet_pool_ptr, NX_WAIT_FOREVER);
     }
 
@@ -111,8 +157,8 @@ UINT Http_Server_Request_Notify(NX_WEB_HTTP_SERVER *server_ptr, UINT request_typ
   * genuinely new one) and sending it as one multipart part. Only ever
   * returns (completing the callback) once the client disconnects, the
   * connection errors, or no provider is registered - see
-  * network_service.c's STREAM_SERVER_PORT comment for why this lives on
-  * its own server/thread instead of HttpServer's.
+  * network_service.c's STREAM_SERVER_THREAD_STACK_SIZE comment for why
+  * this lives on its own server/thread instead of HttpServer's.
   */
 UINT Stream_Server_Request_Notify(NX_WEB_HTTP_SERVER *server_ptr, UINT request_type, CHAR *resource,
                                    NX_PACKET *packet_ptr) {

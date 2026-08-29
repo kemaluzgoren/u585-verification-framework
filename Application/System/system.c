@@ -87,6 +87,14 @@ UINT System_Start(TX_BYTE_POOL *byte_pool) {
 
     sensor_service_init();
 
+    /* Same decoupling as the image provider (System_Init()): http_responses.c
+       only knows the Http_Text_Provider_t shape, never sensor_service.h.
+       Registered here, after sensor_service_init() creates its mutex,
+       rather than in System_Init() alongside the image provider - a
+       request arriving before this line would otherwise lock an
+       uninitialized mutex. */
+    Http_Responses_RegisterSensorProvider(Sensor_Service_ProvideJSON);
+
     ret = tx_byte_allocate(byte_pool, &sensor_service_thread_stack, SENSOR_SERVICE_THREAD_STACK_SIZE, TX_NO_WAIT);
     if (ret != TX_SUCCESS) {
         return ret;
